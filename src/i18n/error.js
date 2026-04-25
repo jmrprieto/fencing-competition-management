@@ -1,0 +1,43 @@
+const errors = {
+  es: {
+    UNAUTHORIZED: 'No autorizado',
+    FORBIDDEN: 'Prohibido',
+    INTERNAL_ERROR: 'Error interno del servidor',
+    ROUTE_NOT_FOUND: 'Ruta no encontrada',
+    INVALID_START_DATE: 'Fecha de inicio inválida',
+    INVALID_END_DATE: 'Fecha de fin inválida',
+    END_DATE_BEFORE_START: 'La fecha de fin debe ser posterior o igual a la de inicio',
+    MISSING_FIELDS: 'Faltan campos obligatorios',
+    EMAIL_ALREADY_EXISTS: 'El correo electrónico ya existe',
+    NOT_ENOUGH_FENCERS: 'No hay suficientes esgrimistas registrados para generar poules',
+    INVALID_COMPETITION_STATE: 'El estado de la competición no permite esta acción',
+    INVALID_SCORE: 'Puntuación inválida',
+    NO_TIES_ALLOWED: 'No se permiten empates',
+    BOUT_NOT_FOUND: 'Combate no encontrado',
+    BOUT_ALREADY_FINISHED: 'El combate ya ha terminado',
+    COMPETITION_NOT_FOUND: 'Competición no encontrada',
+    INVALID_TRANSITION: 'Transición no válida'
+  },
+
+  'en-GB': {
+    UNAUTHORIZED: 'Unauthorized',
+    FORBIDDEN: 'Forbidden',
+    INTERNAL_ERROR: 'Internal server error',
+    ROUTE_NOT_FOUND: 'Route not found',
+    INVALID_START_DATE: 'Invalid start date',
+    INVALID_END_DATE: 'Invalid end date',
+    END_DATE_BEFORE_START: 'End date must be greater than or equal to start date',
+    MISSING_FIELDS: 'Missing required fields',
+    EMAIL_ALREADY_EXISTS: 'Email already exists',
+    NOT_ENOUGH_FENCERS: 'Not enough fencers registered to generate poules',
+    INVALID_COMPETITION_STATE: 'Competition state does not allow this action',
+    INVALID_SCORE: 'Invalid score',
+    NO_TIES_ALLOWED: 'No ties allowed',
+    BOUT_NOT_FOUND: 'Bout not found',
+    BOUT_ALREADY_FINISHED: 'Bout already finished',
+    COMPETITION_NOT_FOUND: 'Competition not found',
+    INVALID_TRANSITION: 'Invalid transition'
+  }
+};
+
+module.exports = errors;
