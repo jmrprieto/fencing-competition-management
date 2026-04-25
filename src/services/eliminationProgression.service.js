@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const AppError = require('../utils/appError');
+const eventBus = require('../utils/eventBus');
 
 async function updateEliminationBout(boutId, scoreA, scoreB, refereeId) {
   if (scoreA < 0 || scoreB < 0) {
@@ -32,7 +33,7 @@ async function updateEliminationBout(boutId, scoreA, scoreB, refereeId) {
     throw new AppError('BOUT_NOT_FOUND', 404);
   }
 
-  if (bout.status === 'finished') {
+  if (bout.status === 'FINISHED') {
     throw new AppError('BOUT_ALREADY_FINISHED', 400);
   }
 
@@ -52,7 +53,7 @@ async function updateEliminationBout(boutId, scoreA, scoreB, refereeId) {
       score_b = $2,
       winner_id = $3,
       referee_id = COALESCE($4, referee_id),
-      status = 'finished',
+      status = 'FINISHED',
       finished_at = NOW()
     WHERE id = $5
     RETURNING *
@@ -61,6 +62,14 @@ async function updateEliminationBout(boutId, scoreA, scoreB, refereeId) {
   );
 
   const finishedBout = updated.rows[0];
+
+  eventBus.emitEvent(req, 'elimination_bout_updated', {
+    competitionId: bout.competition_id,
+    boutId,
+    scoreA,
+    scoreB,
+    winnerId: realWinnerId
+  });
 
   // -------------------------
   // 3. PROPAGATE WINNER
@@ -91,6 +100,11 @@ async function updateEliminationBout(boutId, scoreA, scoreB, refereeId) {
     );
   }
 
+  eventBus.emitEvent(req, 'elimination_progressed', {
+    competitionId: bout.competition_id,
+    nextBoutId: finishedBout.next_bout_id
+  });
+
   return finishedBout;
 }
 
@@ -104,7 +118,7 @@ async function autoResolveBye(bout) {
       UPDATE elimination_bouts
       SET
         winner_id = $1,
-        status = 'finished',
+        status = 'FINISHED',
         finished_at = NOW()
       WHERE id = $2
       `,
@@ -134,3 +148,8 @@ async function autoResolveBye(bout) {
     }
   }
 }
+
+module.exports = {
+  updateEliminationBout,
+  autoResolveBye
+};

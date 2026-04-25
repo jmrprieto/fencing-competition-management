@@ -4,9 +4,11 @@ const router = express.Router();
 const competitionController = require('../controllers/competition.controller');
 const authMiddleware = require('../middleware/auth.middleware');
 const { requireRole } = require('../middleware/auth.middleware');
+const multipartMiddleware = require('../middleware/multipart.middleware');
 const registrationController =
   require('../controllers/competitionRegistration.controller');
 const pouleController = require('../controllers/poule.controller');
+const eliminationController = require('../controllers/elimination.controller');
 
 
 // =========================
@@ -61,6 +63,25 @@ router.post(
   registrationController.registerFencer
 );
 
+// -------------------------
+// IMPORT FENCERS FROM CSV
+// -------------------------
+router.post(
+  '/:id/fencers/import',
+  authMiddleware,
+  multipartMiddleware,
+  registrationController.importFencers
+);
+
+// -------------------------
+// IMPORT REFEREES FROM CSV
+// -------------------------
+router.post(
+  '/:id/referees/import',
+  authMiddleware,
+  multipartMiddleware,
+  registrationController.importReferees
+);
 
 // -------------------------
 // LIST FENCERS
@@ -81,5 +102,41 @@ router.post(
   authMiddleware,
   requireRole('admin'),
   pouleController.generatePoules
-);  
+);
+
+// -------------------------
+// LIST POULES
+// -------------------------
+router.get(
+  '/:id/poules',
+  authMiddleware,
+  pouleController.listPoules
+);
+
+// -------------------------
+// POULE DETAILS
+// -------------------------
+router.get(
+  '/:id/poules/:pouleId',
+  authMiddleware,
+  pouleController.getPouleDetails
+);
+
+// -------------------------
+// ELIMINATION TREE
+// -------------------------
+router.get(
+  '/:id/elimination',
+  authMiddleware,
+  eliminationController.getEliminationTree
+);
+
+// -------------------------
+// POULE DETAILS
+// -------------------------
+router.get(
+  '/:id/poules/:pouleId',
+  authMiddleware,
+  pouleController.getPouleDetails
+);
 

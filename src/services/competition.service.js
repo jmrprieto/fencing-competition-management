@@ -83,7 +83,7 @@ async function getCompetitionById(id, user) {
   const competition = await competitionRepository.findById(id);
 
   if (!competition) {
-    throw new AppError('NOT_FOUND', 404);
+    throw new AppError('COMPETITION_NOT_FOUND', 404);
   }
 
   // super_admin bypass
@@ -115,7 +115,7 @@ async function updateCompetitionStatus(id, nextStatus, user) {
   const competition = await competitionRepository.findById(id);
 
   if (!competition) {
-    throw new AppError('NOT_FOUND', 404);
+    throw new AppError('COMPETITION_NOT_FOUND', 404);
   }
 
   // ownership rule

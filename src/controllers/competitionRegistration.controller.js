@@ -33,7 +33,61 @@ async function listFencers(req, res, next) {
   }
 }
 
+async function importFencers(req, res, next) {
+  try {
+    const { id } = req.params;
+    let csvPayload = null;
+
+    if (req.file && req.file.buffer) {
+      csvPayload = req.file.buffer.toString('utf8');
+    } else if (typeof req.body === 'string') {
+      csvPayload = req.body;
+    } else if (req.body && typeof req.body.csv === 'string') {
+      csvPayload = req.body.csv;
+    }
+
+    const result =
+      await competitionRegistrationService.importFencersFromCsv(
+        id,
+        csvPayload,
+        req.user
+      );
+
+    res.status(201).json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function importReferees(req, res, next) {
+  try {
+    const { id } = req.params;
+    let csvPayload = null;
+
+    if (req.file && req.file.buffer) {
+      csvPayload = req.file.buffer.toString('utf8');
+    } else if (typeof req.body === 'string') {
+      csvPayload = req.body;
+    } else if (req.body && typeof req.body.csv === 'string') {
+      csvPayload = req.body.csv;
+    }
+
+    const result =
+      await competitionRegistrationService.importRefereesFromCsv(
+        id,
+        csvPayload,
+        req.user
+      );
+
+    res.status(201).json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   registerFencer,
-  listFencers
+  listFencers,
+  importFencers,
+  importReferees
 };

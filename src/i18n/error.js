@@ -16,7 +16,14 @@ const errors = {
     BOUT_NOT_FOUND: 'Combate no encontrado',
     BOUT_ALREADY_FINISHED: 'El combate ya ha terminado',
     COMPETITION_NOT_FOUND: 'Competición no encontrada',
-    INVALID_TRANSITION: 'Transición no válida'
+    INVALID_TRANSITION: 'Transición no válida',
+    INVALID_BOUT_STATE: 'Estado del combate no válido',
+    FORBIDDEN_REFEREE_BOUT: 'No tienes permiso para modificar este combate',
+    COMPETITION_NOT_FOUND: 'Competición no encontrada',
+    POULE_NOT_FOUND: 'Poule no encontrada',
+    CLUB_NOT_FOUND: 'Club no encontrado',
+    INVALID_CSV_ROW: 'Fila CSV inválida',
+    DUPLICATE_PAYLOAD: 'Fila duplicada en el payload'
   },
 
   'en-GB': {
@@ -36,7 +43,14 @@ const errors = {
     BOUT_NOT_FOUND: 'Bout not found',
     BOUT_ALREADY_FINISHED: 'Bout already finished',
     COMPETITION_NOT_FOUND: 'Competition not found',
-    INVALID_TRANSITION: 'Invalid transition'
+    INVALID_TRANSITION: 'Invalid transition',
+    INVALID_BOUT_STATE: 'Invalid bout state',
+    COMPETITION_NOT_FOUND: 'Competition not found',
+    FORBIDDEN_REFEREE_BOUT: 'You do not have permission to modify this bout',
+    POULE_NOT_FOUND: 'Poule not found',
+    CLUB_NOT_FOUND: 'Club not found',
+    INVALID_CSV_ROW: 'Invalid CSV row',
+    DUPLICATE_PAYLOAD: 'Duplicate row in payload'
   }
 };
 

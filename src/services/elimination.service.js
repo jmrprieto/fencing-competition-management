@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const competitionRepository = require('../repositories/competition.repository');
 const AppError = require('../utils/appError');
 
 async function createBracket(competitionId, roundName) {
@@ -129,7 +130,7 @@ async function generateElimination(competitionId) {
         winner_id,
         status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, 'finished')
+      VALUES ($1, $2, $3, $4, $5, $6, 'FINISHED')
       RETURNING *
       `,
       [
@@ -157,7 +158,7 @@ async function generateElimination(competitionId) {
       fencer_b_id,
       status
     )
-    VALUES ($1, $2, $3, $4, $5, 'pending')
+    VALUES ($1, $2, $3, $4, $5, 'PENDING')
     RETURNING *
     `,
     [
@@ -201,4 +202,127 @@ async function generateElimination(competitionId) {
     bouts: createdBouts
   };
 }
+
+function buildEliminationTree(bouts) {
+  const nodesById = new Map();
+
+  for (const bout of bouts) {
+    nodesById.set(bout.id, {
+      ...bout,
+      children: []
+    });
+  }
+
+  for (const bout of nodesById.values()) {
+    if (bout.next_bout_id) {
+      const next = nodesById.get(bout.next_bout_id);
+      if (next) {
+        next.children.push(bout);
+      }
+    }
+  }
+
+  return [...nodesById.values()].filter((bout) => !bout.next_bout_id);
+}
+
+async function getEliminationTree(competitionId, user) {
+  const competition = await competitionRepository.findById(competitionId);
+  if (!competition) {
+    throw new AppError('COMPETITION_NOT_FOUND', 404);
+  }
+
+  if (user.role !== 'super_admin' && competition.admin_id !== user.id) {
+    throw new AppError('FORBIDDEN', 403);
+  }
+
+  const bracketResults = await db.query(
+    `
+    SELECT id, round_name
+    FROM elimination_brackets
+    WHERE competition_id = $1
+    ORDER BY id ASC
+    `,
+    [competitionId]
+  );
+
+  const boutsResults = await db.query(
+    `
+    SELECT
+      eb.*, 
+      fa.surname AS fencer_a_surname,
+      fa.given_name AS fencer_a_given_name,
+      fb.surname AS fencer_b_surname,
+      fb.given_name AS fencer_b_given_name,
+      fr.name AS referee_name,
+      fw.surname AS winner_surname,
+      fw.given_name AS winner_given_name
+    FROM elimination_bouts eb
+    LEFT JOIN fencers fa ON eb.fencer_a_id = fa.id
+    LEFT JOIN fencers fb ON eb.fencer_b_id = fb.id
+    LEFT JOIN referees fr ON eb.referee_id = fr.id
+    LEFT JOIN fencers fw ON eb.winner_id = fw.id
+    WHERE eb.competition_id = $1
+    ORDER BY eb.round_order ASC, eb.id ASC
+    `,
+    [competitionId]
+  );
+
+  const bouts = boutsResults.rows.map((row) => ({
+    id: row.id,
+    bracket_id: row.bracket_id,
+    round_order: row.round_order,
+    status: row.status,
+    score_a: row.score_a,
+    score_b: row.score_b,
+    next_bout_id: row.next_bout_id,
+    started_at: row.started_at,
+    finished_at: row.finished_at,
+    fencer_a: row.fencer_a_id
+      ? {
+          id: row.fencer_a_id,
+          surname: row.fencer_a_surname,
+          given_name: row.fencer_a_given_name
+        }
+      : null,
+    fencer_b: row.fencer_b_id
+      ? {
+          id: row.fencer_b_id,
+          surname: row.fencer_b_surname,
+          given_name: row.fencer_b_given_name
+        }
+      : null,
+    winner: row.winner_id
+      ? {
+          id: row.winner_id,
+          surname: row.winner_surname,
+          given_name: row.winner_given_name
+        }
+      : null,
+    referee: row.referee_id
+      ? {
+          id: row.referee_id,
+          name: row.referee_name
+        }
+      : null
+  }));
+
+  const brackets = bracketResults.rows.map((bracket) => {
+    const bracketBouts = bouts.filter((bout) => bout.bracket_id === bracket.id);
+    return {
+      id: bracket.id,
+      round_name: bracket.round_name,
+      tree: buildEliminationTree(bracketBouts)
+    };
+  });
+
+  return {
+    competition_id: competitionId,
+    brackets
+  };
+}
+
+module.exports = {
+  generateElimination,
+  getEliminationTree
+};
 

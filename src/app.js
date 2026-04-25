@@ -3,6 +3,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 
 const competitionRoutes = require('./routes/competition.routes');
+const clubRoutes = require('./routes/club.routes');
+const pouleStandingsRoutes = require('./routes/pouleStandings.routes');
+const pouleProgressionRoutes = require('./routes/pouleProgression.routes');
+const eliminationProgressionRoutes = require('./routes/eliminationProgression.routes');
 const errorMiddleware = require('./middleware/error.middleware');
 const authRoutes = require('./routes/auth.routes');
 
@@ -22,6 +26,13 @@ app.use(cors({
 }));
 
 // Body parsing
+app.use(express.raw({
+  type: (req) =>
+    req.headers['content-type'] &&
+    req.headers['content-type'].startsWith('multipart/form-data'),
+  limit: '2mb'
+}));
+app.use(express.text({ type: ['text/csv', 'text/plain'], limit: '1mb' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -38,6 +49,10 @@ app.get('/health', (req, res) => {
 // =========================
 
 app.use('/api/competitions', competitionRoutes);
+app.use('/api/clubs', clubRoutes);
+app.use('/api/poule-standings', pouleStandingsRoutes);
+app.use('/api/poule-progressions', pouleProgressionRoutes);
+app.use('/api/elimination-progressions', eliminationProgressionRoutes);
 app.use('/api/auth', authRoutes);
 
 // =========================

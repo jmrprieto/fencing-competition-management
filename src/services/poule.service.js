@@ -10,7 +10,7 @@ async function generatePoules(competitionId, user) {
   const competition = await competitionRepository.findById(competitionId);
 
   if (!competition) {
-    throw new AppError('NOT_FOUND', 404);
+    throw new AppError('COMPETITION_NOT_FOUND', 404);
   }
 
   // -------------------------
@@ -139,6 +139,48 @@ async function generatePoules(competitionId, user) {
   return createdPoules;
 }
 
+async function getPoules(competitionId, user) {
+  const competition = await competitionRepository.findById(competitionId);
+
+  if (!competition) {
+    throw new AppError('COMPETITION_NOT_FOUND', 404);
+  }
+
+  if (user.role !== 'super_admin' && competition.admin_id !== user.id) {
+    throw new AppError('FORBIDDEN', 403);
+  }
+
+  return await pouleRepository.getPoulesByCompetition(competitionId);
+}
+
+async function getPouleDetails(competitionId, pouleId, user) {
+  const competition = await competitionRepository.findById(competitionId);
+
+  if (!competition) {
+    throw new AppError('COMPETITION_NOT_FOUND', 404);
+  }
+
+  if (user.role !== 'super_admin' && competition.admin_id !== user.id) {
+    throw new AppError('FORBIDDEN', 403);
+  }
+
+  const poule = await pouleRepository.getPouleById(pouleId);
+  if (!poule || Number(poule.competition_id) !== Number(competitionId)) {
+    throw new AppError('POULE_NOT_FOUND', 404);
+  }
+
+  const fencers = await pouleRepository.getFencersByPoule(pouleId);
+  const bouts = await pouleRepository.getPouleBoutsByPoule(pouleId);
+
+  return {
+    ...poule,
+    fencers,
+    bouts
+  };
+}
+
 module.exports = {
-  generatePoules
+  generatePoules,
+  getPoules,
+  getPouleDetails
 };
