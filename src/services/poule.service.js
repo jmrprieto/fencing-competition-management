@@ -133,6 +133,18 @@ async function generatePoules(competitionId, user) {
       );
     }
 
+    const fencerIds = poules[i].map((f) => f.id);
+    for (let a = 0; a < fencerIds.length; a++) {
+      for (let b = a + 1; b < fencerIds.length; b++) {
+        await pouleRepository.createPouleBout(
+          poule.id,
+          fencerIds[a],
+          fencerIds[b],
+          referee?.id || null
+        );
+      }
+    }
+
     createdPoules.push(poule);
   }
 

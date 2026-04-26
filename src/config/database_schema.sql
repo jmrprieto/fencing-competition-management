@@ -5,9 +5,9 @@
 -- =========================
 
 DROP TYPE IF EXISTS competition_status CASCADE;
-CREATE TYPE competition_status AS ENUM ('CREATED','PENDING', 'REGISTRATION', 'POULES', 'ELIMINATION', 'FINISHED');
+CREATE TYPE competition_status AS ENUM ('CREATED', 'REGISTRATION', 'POULES', 'ELIMINATION', 'FINISHED');
 DROP TYPE IF EXISTS bout_status CASCADE;
-CREATE TYPE bout_status AS ENUM ('PENDING', 'ONGOING', 'COMPLETED');
+CREATE TYPE bout_status AS ENUM ('CREATED', 'ONGOING', 'COMPLETED');
 DROP TYPE IF EXISTS sex_type CASCADE;
 CREATE TYPE sex_type AS ENUM ('M', 'F', 'X');
 DROP TYPE IF EXISTS bout_type CASCADE;
@@ -122,7 +122,7 @@ CREATE TABLE poule_bouts (
     score_a INTEGER CHECK (score_a >= 0),
     score_b INTEGER CHECK (score_b >= 0),
     winner_id INTEGER REFERENCES fencers(id),
-    status bout_status NOT NULL DEFAULT 'PENDING',
+    status bout_status NOT NULL DEFAULT 'CREATED',
     started_at TIMESTAMP,
     finished_at TIMESTAMP,
     CHECK (fencer_a_id <> fencer_b_id)
@@ -167,7 +167,7 @@ CREATE TABLE elimination_bouts (
     score_b INTEGER CHECK (score_b >= 0),
     winner_id INTEGER REFERENCES fencers(id),
     next_bout_id INTEGER REFERENCES elimination_bouts(id) ON DELETE SET NULL,
-    status bout_status NOT NULL DEFAULT 'PENDING',
+    status bout_status NOT NULL DEFAULT 'CREATED',
     started_at TIMESTAMP,
     finished_at TIMESTAMP,
     CHECK (
@@ -269,6 +269,7 @@ CREATE TABLE languages (
 INSERT INTO languages (code, name, is_default) VALUES
 ('es', 'Spanish', TRUE),
 ('en-GB', 'English (UK)', FALSE);
+
 DROP TABLE IF EXISTS competition_translations CASCADE;
 CREATE TABLE competition_translations (
     id SERIAL PRIMARY KEY,
@@ -320,3 +321,74 @@ LEFT JOIN poule_bouts pb
   ON pb.poule_id = pf.poule_id
   AND (pb.fencer_a_id = f.id OR pb.fencer_b_id = f.id)
 GROUP BY f.id, pf.poule_id, p.competition_id;
+
+
+-- Insert initial data for testing
+INSERT INTO clubs (name, city, country) VALUES
+('Club Esgrima Madrid', 'Madrid', 'Spain'),
+('Club de Esgrima Barcelona', 'Barcelona', 'Spain'),
+('Fencing Club London', 'London', 'UK'),
+('100Tolos Coruña', 'Coruña', 'Spain');
+
+insert into competitions (name, city, country, category, start_date, end_date, admin_id, club_id) values
+('Torneo de Primavera', 'Madrid', 'Spain', 'Senior', '2024-09-01', '2024-09-03', 1, 1),
+('Copa de Otoño', 'Barcelona', 'Spain', 'Junior', '2024-10-15', '2024-10-17', 1, 2),
+('London Open', 'London', 'UK', 'Senior', '2024-11-05', '2024-11-07', 1, 3);
+
+insert into fencers (surname, given_name, club_id, ranking, sex) values
+('Garcia', 'Juan', 1, 5, 'M'),
+('Lopez', 'Maria', 1, 10, 'F'),
+('Smith', 'John', 3, 8, 'M'),
+('Doe', 'Jane', 3, 12, 'X'),
+('Perez', 'Carlos', 2, 7, 'M'),
+('Rodriguez Couto', 'Lia', 4, 1, 'F'),
+('Gonzalez', 'Ana', 2, 15, 'F'),
+insert into fencers (surname, given_name, club_id, ranking, sex) values
+('Johnson', 'Emily', 3, 20, 'F'),
+('Martinez', 'Luis', 1, 25, 'M'),
+('Davis', 'Michael', 4, 30, 'M'),
+('Sanchez', 'Sofia', 2, 18, 'F'),
+('Wilson', 'David', 3, 22, 'M'),
+('Fernandez', 'Laura', 1, 28, 'F'),
+('Taylor', 'James', 4, 35, 'M'),
+('Gomez', 'Lucia', 2, 14, 'F'),
+('Anderson', 'Robert', 3, 26, 'M'),
+('Ruiz', 'Elena', 1, 32, 'F'),
+('Thomas', 'William', 4, 40, 'M'),
+('Hernandez', 'Isabel', 2, 9, 'F'),
+('Moore', 'Christopher', 3, 19, 'M');
+
+insert into referees (name) values
+('Referee A'),
+('Referee B'),
+('Referee C');
+
+insert into competition_referees (competition_id, referee_id) values
+(1, 1),
+(1, 2),
+(2, 2),
+(2, 3),
+(3, 1),
+(3, 3);
+
+insert into competition_fencers (competition_id, fencer_id) values
+(1, 1),
+(1, 2),
+(1, 3),
+(1, 4),
+(1, 5),
+(1, 6),
+(1, 7),
+(1, 8),
+(1, 9),
+(1, 10),
+(1, 11),
+(1, 12),
+(1, 13),
+(1, 14),
+(1, 15),
+(1, 16),
+(1, 17),
+(1, 18),
+(1, 19),
+(1, 20);

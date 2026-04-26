@@ -207,7 +207,7 @@ async function updateCompetitionStatus(id, nextStatus, user) {
   }
 
   const allowedTransitions = {
-    PENDING: ['REGISTRATION'],
+    CREATED: ['REGISTRATION'],
     REGISTRATION: ['POULES'],
     POULES: ['ELIMINATION'],
     ELIMINATION: ['FINISHED'],

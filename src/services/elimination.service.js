@@ -158,7 +158,7 @@ async function generateElimination(competitionId) {
       fencer_b_id,
       status
     )
-    VALUES ($1, $2, $3, $4, $5, 'PENDING')
+    VALUES ($1, $2, $3, $4, $5, 'CREATED')
     RETURNING *
     `,
     [

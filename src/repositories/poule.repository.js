@@ -1,6 +1,20 @@
 const db = require('../config/db');
 
 async function createPoule(competitionId, pouleNumber, refereeId = null) {
+  const existing = await db.query(
+    `
+    SELECT *
+    FROM poules
+    WHERE competition_id = $1 AND poule_number = $2
+    LIMIT 1
+    `,
+    [competitionId, pouleNumber]
+  );
+
+  if (existing.rows[0]) {
+    return existing.rows[0];
+  }
+
   const result = await db.query(
     `
     INSERT INTO poules (competition_id, poule_number, referee_id)
@@ -14,13 +28,56 @@ async function createPoule(competitionId, pouleNumber, refereeId = null) {
 }
 
 async function addFencerToPoule(pouleId, fencerId) {
-  return await db.query(
+  const result = await db.query(
     `
     INSERT INTO poule_fencers (poule_id, fencer_id)
     VALUES ($1, $2)
+    ON CONFLICT DO NOTHING
+    RETURNING *
     `,
     [pouleId, fencerId]
   );
+
+  return result.rows[0];
+}
+
+async function findPouleBout(pouleId, fencerAId, fencerBId) {
+  const result = await db.query(
+    `
+    SELECT *
+    FROM poule_bouts
+    WHERE poule_id = $1
+      AND ((fencer_a_id = $2 AND fencer_b_id = $3)
+        OR (fencer_a_id = $3 AND fencer_b_id = $2))
+    LIMIT 1
+    `,
+    [pouleId, fencerAId, fencerBId]
+  );
+
+  return result.rows[0];
+}
+
+async function createPouleBout(pouleId, fencerAId, fencerBId, refereeId = null) {
+  const existing = await findPouleBout(
+    pouleId,
+    fencerAId,
+    fencerBId
+  );
+
+  if (existing) {
+    return existing;
+  }
+
+  const result = await db.query(
+    `
+    INSERT INTO poule_bouts (poule_id, fencer_a_id, fencer_b_id, referee_id)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *
+    `,
+    [pouleId, fencerAId, fencerBId, refereeId]
+  );
+
+  return result.rows[0];
 }
 
 async function getPoulesByCompetition(competitionId) {
@@ -83,6 +140,7 @@ async function getPouleBoutsByPoule(pouleId) {
 module.exports = {
   createPoule,
   addFencerToPoule,
+  createPouleBout,
   getPoulesByCompetition,
   getPouleById,
   getFencersByPoule,
