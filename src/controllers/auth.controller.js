@@ -1,9 +1,13 @@
 const authService = require('../services/auth.service');
 
-async function createAdmin(req, res, next) {
+async function createCompetitionAdmin(req, res, next) {
   try {
-    const { email, password } = req.body;
-    const result = await authService.createAdmin(email, password);
+    const { username, password } = req.body;
+    const result = await authService.createCompetitionAdmin(
+      username,
+      password,
+      req.user
+    );
 
     res.status(201).json({ data: result });
   } catch (err) {
@@ -13,8 +17,8 @@ async function createAdmin(req, res, next) {
 
 async function login(req, res, next) {
   try {
-    const { email, password } = req.body;
-    const result = await authService.login(email, password);
+    const { username, password } = req.body;
+    const result = await authService.login(username, password);
 
     res.status(200).json({ data: result });
   } catch (err) {
@@ -23,6 +27,6 @@ async function login(req, res, next) {
 }
 
 module.exports = {
-  createAdmin,
+  createCompetitionAdmin,
   login
 };

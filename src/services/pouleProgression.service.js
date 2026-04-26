@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const AppError = require('../utils/appError');
 const eventBus = require('../utils/eventBus');
+const { ROLES } = require('../utils/roles');
 
 async function updatePouleBout(boutId, scoreA, scoreB, refereeId, user, req) {
   if (scoreA < 0 || scoreB < 0) {
@@ -84,17 +85,13 @@ async function updatePouleBout(boutId, scoreA, scoreB, refereeId, user, req) {
 }
 
 function assertCanModifyBout(user, bout) {
-  if (user.role === 'super_admin') return;
+  if (user.role === ROLES.SUPER_ADMIN) return;
 
-  if (user.role === 'competition_admin') {
+  if (user.role === ROLES.COMPETITION_ADMIN) {
     if (bout.competition_id !== user.competition_id) {
       throw new AppError('FORBIDDEN', 403);
     }
     return;
-  }
-
-  if (user.role === 'referee') {
-    return; // optionally restrict later to assigned bouts only
   }
 
   throw new AppError('FORBIDDEN', 403);
@@ -106,18 +103,11 @@ module.exports = {
 };
 
 function assertCanScoreBout(user, bout, refereeId) {
-  if (user.role === 'super_admin') return;
+  if (user.role === ROLES.SUPER_ADMIN) return;
 
-  if (user.role === 'competition_admin') {
+  if (user.role === ROLES.COMPETITION_ADMIN) {
     if (bout.competition_id !== user.competition_id) {
       throw new AppError('FORBIDDEN', 403);
-    }
-    return;
-  }
-
-  if (user.role === 'referee') {
-    if (bout.referee_id !== user.id) {
-      throw new AppError('FORBIDDEN_REFEREE_BOUT', 403);
     }
     return;
   }

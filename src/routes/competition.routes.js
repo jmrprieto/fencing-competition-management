@@ -3,7 +3,7 @@ const router = express.Router();
 
 const competitionController = require('../controllers/competition.controller');
 const authMiddleware = require('../middleware/auth.middleware');
-const { requireRole } = require('../middleware/auth.middleware');
+const { requireAnyRole } = require('../middleware/auth.middleware');
 const multipartMiddleware = require('../middleware/multipart.middleware');
 const registrationController =
   require('../controllers/competitionRegistration.controller');
@@ -17,7 +17,7 @@ const eliminationController = require('../controllers/elimination.controller');
 router.post(
   '/',
   authMiddleware,
-  requireRole('admin'),
+  requireAnyRole(['super_admin', 'competition_admin']),
   competitionController.createCompetition
 );
 
@@ -48,11 +48,9 @@ router.get(
 router.patch(
   '/:id/status',
   authMiddleware,
-  requireRole('admin'),
+  requireAnyRole(['super_admin', 'competition_admin']),
   competitionController.updateStatus
 );
-
-module.exports = router;
 
 // -------------------------
 // REGISTER FENCER
@@ -60,6 +58,7 @@ module.exports = router;
 router.post(
   '/:id/fencers',
   authMiddleware,
+  requireAnyRole(['super_admin', 'competition_admin']),
   registrationController.registerFencer
 );
 
@@ -69,6 +68,7 @@ router.post(
 router.post(
   '/:id/fencers/import',
   authMiddleware,
+  requireAnyRole(['super_admin', 'competition_admin']),
   multipartMiddleware,
   registrationController.importFencers
 );
@@ -79,6 +79,7 @@ router.post(
 router.post(
   '/:id/referees/import',
   authMiddleware,
+  requireAnyRole(['super_admin', 'competition_admin']),
   multipartMiddleware,
   registrationController.importReferees
 );
@@ -89,6 +90,7 @@ router.post(
 router.get(
   '/:id/fencers',
   authMiddleware,
+  requireAnyRole(['super_admin', 'competition_admin']),
   registrationController.listFencers
 );
 
@@ -100,7 +102,7 @@ router.get(
 router.post(
   '/:id/poules',
   authMiddleware,
-  requireRole('admin'),
+  requireAnyRole(['super_admin', 'competition_admin']),
   pouleController.generatePoules
 );
 
@@ -132,11 +134,14 @@ router.get(
 );
 
 // -------------------------
-// POULE DETAILS
+// COMPETITION RESULTS / REPORT
 // -------------------------
 router.get(
-  '/:id/poules/:pouleId',
+  '/:id/results',
   authMiddleware,
-  pouleController.getPouleDetails
+  requireAnyRole(['super_admin', 'competition_admin']),
+  competitionController.getCompetitionResults
 );
+
+module.exports = router;
 

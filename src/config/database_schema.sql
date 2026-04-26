@@ -1,78 +1,50 @@
-PostgreSQL database schema:
+-- PostgreSQL database schema:
 
 -- =========================
 -- ENUM TYPES
 -- =========================
 
+DROP TYPE IF EXISTS competition_status CASCADE;
 CREATE TYPE competition_status AS ENUM ('CREATED','PENDING', 'REGISTRATION', 'POULES', 'ELIMINATION', 'FINISHED');
+DROP TYPE IF EXISTS bout_status CASCADE;
 CREATE TYPE bout_status AS ENUM ('PENDING', 'ONGOING', 'COMPLETED');
+DROP TYPE IF EXISTS sex_type CASCADE;
 CREATE TYPE sex_type AS ENUM ('M', 'F', 'X');
+DROP TYPE IF EXISTS bout_type CASCADE;
 CREATE TYPE bout_type AS ENUM ('POULE', 'ELIMINATION');
 
 -- =========================
 -- USERS (ADMIN AUTH)
 -- =========================
-
+DROP TABLE IF EXISTS users CASCADE;
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
+    username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'admin',
+    role TEXT NOT NULL DEFAULT 'competition_admin',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =========================
 -- CLUBS
 -- =========================
-
+DROP TABLE IF EXISTS clubs CASCADE;
 CREATE TABLE clubs (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     city TEXT NOT NULL,
     country TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (LOWER(name))
-);
-
--- =========================
--- REFEREES
--- =========================
-
-CREATE TABLE referees (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE competition_referees (
-    id SERIAL PRIMARY KEY,
-
-    competition_id INTEGER NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
-    referee_id INTEGER NOT NULL REFERENCES referees(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (competition_id, referee_id)
-);
-
--- =========================
--- FENCERS
--- =========================
-
-CREATE TABLE fencers (
-    id SERIAL PRIMARY KEY,
-    surname TEXT NOT NULL,
-    given_name TEXT NOT NULL,
-    club_id INTEGER NOT NULL REFERENCES clubs(id) ON DELETE RESTRICT,
-    ranking INTEGER NOT NULL CHECK (ranking > 0),
-    sex sex_type NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    UNIQUE (name)
 );
 
 -- =========================
 -- COMPETITIONS
 -- =========================
-
+DROP TABLE IF EXISTS competitions CASCADE;
 CREATE TABLE competitions (
     id SERIAL PRIMARY KEY,
+    club_id INTEGER NOT NULL REFERENCES clubs(id) ON DELETE RESTRICT,
     name TEXT NOT NULL,
     city TEXT NOT NULL,
     country TEXT NOT NULL,
@@ -85,9 +57,43 @@ CREATE TABLE competitions (
 );
 
 -- =========================
+-- REFEREES
+-- =========================
+DROP TABLE IF EXISTS referees CASCADE;
+CREATE TABLE referees (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS competition_referees CASCADE;
+CREATE TABLE competition_referees (
+    id SERIAL PRIMARY KEY,
+    competition_id INTEGER NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
+    referee_id INTEGER NOT NULL REFERENCES referees(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (competition_id, referee_id)
+);
+
+-- =========================
+-- FENCERS
+-- =========================
+DROP TABLE IF EXISTS fencers CASCADE;
+CREATE TABLE fencers (
+    id SERIAL PRIMARY KEY,
+    surname TEXT NOT NULL,
+    given_name TEXT NOT NULL,
+    club_id INTEGER NOT NULL REFERENCES clubs(id) ON DELETE RESTRICT,
+    ranking INTEGER NOT NULL CHECK (ranking > 0),
+    sex sex_type NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- =========================
 -- POULES
 -- =========================
-
+DROP TABLE IF EXISTS poules CASCADE;
 CREATE TABLE poules (
     id SERIAL PRIMARY KEY,
     competition_id INTEGER NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,    
@@ -95,7 +101,7 @@ CREATE TABLE poules (
     referee_id INTEGER REFERENCES referees(id),
     UNIQUE (competition_id, poule_number, referee_id)
 );
-
+DROP TABLE IF EXISTS poule_fencers CASCADE;
 CREATE TABLE poule_fencers (
     id SERIAL PRIMARY KEY,
     poule_id INTEGER NOT NULL REFERENCES poules(id) ON DELETE CASCADE,
@@ -106,7 +112,7 @@ CREATE TABLE poule_fencers (
 -- =========================
 -- POULE BOUTS
 -- =========================
-
+DROP TABLE IF EXISTS poule_bouts CASCADE;
 CREATE TABLE poule_bouts (
     id SERIAL PRIMARY KEY,
     poule_id INTEGER NOT NULL REFERENCES poules(id) ON DELETE CASCADE,
@@ -125,7 +131,7 @@ CREATE TABLE poule_bouts (
 -- =========================
 -- POULE RESULTS (STANDINGS)
 -- =========================
-
+DROP TABLE IF EXISTS poule_results CASCADE;
 CREATE TABLE poule_results (
     id SERIAL PRIMARY KEY,
     poule_id INTEGER NOT NULL REFERENCES poules(id) ON DELETE CASCADE,
@@ -142,13 +148,13 @@ CREATE TABLE poule_results (
 -- =========================
 -- ELIMINATION PHASE
 -- =========================
-
+DROP TABLE IF EXISTS elimination_brackets CASCADE;
 CREATE TABLE elimination_brackets (
     id SERIAL PRIMARY KEY,
     competition_id INTEGER NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
     round_name TEXT NOT NULL
 );
-
+DROP TABLE IF EXISTS elimination_bouts CASCADE;
 CREATE TABLE elimination_bouts (
     id SERIAL PRIMARY KEY,
     competition_id INTEGER NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
@@ -174,7 +180,7 @@ CREATE TABLE elimination_bouts (
 -- =========================
 -- FINAL RESULTS
 -- =========================
-
+DROP TABLE IF EXISTS final_results CASCADE;
 CREATE TABLE final_results (
     id SERIAL PRIMARY KEY,
     competition_id INTEGER NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
@@ -187,7 +193,7 @@ CREATE TABLE final_results (
 -- =========================
 -- OPTIONAL: REFEREE ASSIGNMENT HISTORY
 -- =========================
-
+DROP TABLE IF EXISTS bout_referee_assignments CASCADE;
 CREATE TABLE bout_referee_assignments (
     id SERIAL PRIMARY KEY,
     bout_type bout_type NOT NULL,
@@ -243,7 +249,7 @@ CREATE TRIGGER trg_validate_elimination_bout
 BEFORE UPDATE ON elimination_bouts
 FOR EACH ROW
 EXECUTE FUNCTION validate_bout_completion();
-
+DROP TABLE IF EXISTS competition_fencers CASCADE;
 CREATE TABLE competition_fencers (
     id SERIAL PRIMARY KEY,
     competition_id INTEGER NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
@@ -253,7 +259,7 @@ CREATE TABLE competition_fencers (
     UNIQUE (competition_id, fencer_id)
 );
 
-
+DROP TABLE IF EXISTS languages CASCADE;
 CREATE TABLE languages (
     code VARCHAR(10) PRIMARY KEY, -- e.g. 'es', 'en-GB'
     name TEXT NOT NULL,
@@ -263,7 +269,7 @@ CREATE TABLE languages (
 INSERT INTO languages (code, name, is_default) VALUES
 ('es', 'Spanish', TRUE),
 ('en-GB', 'English (UK)', FALSE);
-
+DROP TABLE IF EXISTS competition_translations CASCADE;
 CREATE TABLE competition_translations (
     id SERIAL PRIMARY KEY,
     competition_id INTEGER NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
@@ -276,16 +282,17 @@ CREATE TABLE competition_translations (
 
 
 
-// =========================
+-- =========================
 -- HELPER VIEWS to precalculate poule stats for ranking and display
-// =========================
+-- =========================
+DROP VIEW IF EXISTS fencer_match_stats;
 CREATE OR REPLACE VIEW fencer_match_stats AS
 SELECT
   f.id AS fencer_id,
   pf.poule_id,
   p.competition_id,
 
-  COUNT(pb.id) FILTER (WHERE pb.status = 'FINISHED') AS matches,
+  COUNT(pb.id) FILTER (WHERE pb.status = 'COMPLETED') AS matches,
 
   SUM(
     CASE
@@ -306,12 +313,10 @@ SELECT
   SUM(
     CASE WHEN pb.winner_id = f.id THEN 1 ELSE 0 END
   ) AS v
-
 FROM fencers f
 JOIN poule_fencers pf ON pf.fencer_id = f.id
 JOIN poules p ON p.id = pf.poule_id
 LEFT JOIN poule_bouts pb
   ON pb.poule_id = pf.poule_id
   AND (pb.fencer_a_id = f.id OR pb.fencer_b_id = f.id)
-
 GROUP BY f.id, pf.poule_id, p.competition_id;

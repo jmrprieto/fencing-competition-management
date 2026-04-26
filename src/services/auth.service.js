@@ -2,38 +2,97 @@ const db = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const AppError = require('../utils/appError');
+const { ROLES } = require('../utils/roles');
 
 const SALT_ROUNDS = 10;
 
 
 // =========================
-// CREATE ADMIN USER
+// USER MANAGEMENT
 // =========================
 
-async function createAdmin(email, password) {
-  if (!email || !password) {
+async function findUserByUsername(username) {
+  const result = await db.query(
+    'SELECT * FROM users WHERE username = $1',
+    [username]
+  );
+
+  return result.rows[0] || null;
+}
+
+async function createUser(username, password, role) {
+  if (!username || !password) {
     throw new AppError('MISSING_FIELDS', 400);
   }
 
   const existing = await db.query(
-    'SELECT id FROM users WHERE email = $1',
-    [email]
+    'SELECT id FROM users WHERE username = $1',
+    [username]
   );
 
   if (existing.rows.length > 0) {
-    throw new AppError('EMAIL_ALREADY_EXISTS', 400);
+    throw new AppError('USERNAME_ALREADY_EXISTS', 400);
   }
 
   const hash = await bcrypt.hash(password, SALT_ROUNDS);
-
   const result = await db.query(
-    `INSERT INTO users (email, password_hash, role)
-     VALUES ($1, $2, 'admin')
-     RETURNING id, email, role`,
-    [email, hash]
+    `INSERT INTO users (username, password_hash, role)
+     VALUES ($1, $2, $3)
+     RETURNING id, username, role`,
+    [username, hash, role]
   );
 
   return result.rows[0];
+}
+
+async function createCompetitionAdmin(username, password, currentUser) {
+  if (!currentUser || currentUser.role !== ROLES.SUPER_ADMIN) {
+    throw new AppError('FORBIDDEN', 403);
+  }
+
+  return createUser(username, password, ROLES.COMPETITION_ADMIN);
+}
+
+async function createSuperAdmin(username, password) {
+  if (!username || !password) {
+    throw new AppError('MISSING_FIELDS', 400);
+  }
+
+  const existingUser = await findUserByUsername(username);
+  if (existingUser) {
+    if (existingUser.role !== ROLES.SUPER_ADMIN) {
+      throw new AppError('USERNAME_ALREADY_EXISTS', 400);
+    }
+    return {
+      id: existingUser.id,
+      username: existingUser.username,
+      role: existingUser.role
+    };
+  }
+
+  return createUser(username, password, ROLES.SUPER_ADMIN);
+}
+
+async function ensureSuperAdmin() {
+  const existing = await db.query(
+    'SELECT id FROM users WHERE role = $1',
+    [ROLES.SUPER_ADMIN]
+  );
+
+  if (existing.rows.length > 0) {
+    return;
+  }
+
+  const username = process.env.SUPER_ADMIN_USERNAME;
+  const password = process.env.SUPER_ADMIN_PASSWORD;
+
+  if (!username || !password) {
+    throw new Error(
+      'A super_admin user is required. Set SUPER_ADMIN_USERNAME and SUPER_ADMIN_PASSWORD.'
+    );
+  }
+
+  await createSuperAdmin(username, password);
 }
 
 
@@ -41,21 +100,16 @@ async function createAdmin(email, password) {
 // LOGIN
 // =========================
 
-async function login(email, password) {
-  if (!email || !password) {
+async function login(username, password) {
+  if (!username || !password) {
     throw new AppError('MISSING_FIELDS', 400);
   }
 
-  const result = await db.query(
-    'SELECT * FROM users WHERE email = $1',
-    [email]
-  );
+  const user = await findUserByUsername(username);
 
-  if (result.rows.length === 0) {
+  if (!user) {
     throw new AppError('UNAUTHORIZED', 401);
   }
-
-  const user = result.rows[0];
 
   const isValid = await bcrypt.compare(password, user.password_hash);
 
@@ -66,7 +120,7 @@ async function login(email, password) {
   const token = jwt.sign(
     {
       id: user.id,
-      email: user.email,
+      username: user.username,
       role: user.role
     },
     process.env.JWT_SECRET,
@@ -79,13 +133,15 @@ async function login(email, password) {
     token,
     user: {
       id: user.id,
-      email: user.email,
+      username: user.username,
       role: user.role
     }
   };
 }
 
 module.exports = {
-  createAdmin,
+  createCompetitionAdmin,
+  createSuperAdmin,
+  ensureSuperAdmin,
   login
 };

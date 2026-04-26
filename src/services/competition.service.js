@@ -1,4 +1,9 @@
+const db = require('../config/db');
 const competitionRepository = require('../repositories/competition.repository');
+const clubRepository = require('../repositories/club.repository');
+const pouleRepository = require('../repositories/poule.repository');
+const pouleStandingsService = require('./pouleStandings.service');
+const eliminationService = require('./elimination.service');
 const AppError = require('../utils/appError');
 
 
@@ -12,6 +17,8 @@ async function createCompetition(data, user) {
     city,
     country,
     category,
+    club_id,
+    clubId,
     start_date,
     end_date
   } = data;
@@ -24,7 +31,7 @@ async function createCompetition(data, user) {
     throw new AppError('UNAUTHORIZED', 401);
   }
 
-  if (user.role !== 'admin' && user.role !== 'super_admin') {
+  if (user.role !== 'competition_admin' && user.role !== 'super_admin') {
     throw new AppError('FORBIDDEN', 403);
   }
 
@@ -32,8 +39,20 @@ async function createCompetition(data, user) {
   // VALIDATION
   // -------------------------
 
-  if (!name || !city || !country || !category || !start_date) {
+  if (!name || !city || !country || !category || !club_id && !clubId || !start_date) {
     throw new AppError('MISSING_FIELDS', 400);
+  }
+
+  const clubId = Number(club_id ?? clubId);
+
+  if (!Number.isInteger(clubId) || clubId <= 0) {
+    throw new AppError('INVALID_CLUB_ID', 400);
+  }
+
+  const club = await clubRepository.findClubById(clubId);
+
+  if (!club) {
+    throw new AppError('CLUB_NOT_FOUND', 404);
   }
 
   const startDate = new Date(start_date);
@@ -60,6 +79,7 @@ async function createCompetition(data, user) {
     city: city.trim(),
     country: country.trim(),
     category: category.trim(),
+    club_id: clubId,
     start_date: startDate,
     end_date: endDate,
 
@@ -105,6 +125,69 @@ async function listCompetitions(user) {
   }
 
   return await competitionRepository.findByAdminId(user.id);
+}
+
+async function getCompetitionResults(id, user) {
+  const competition = await competitionRepository.findById(id);
+
+  if (!competition) {
+    throw new AppError('COMPETITION_NOT_FOUND', 404);
+  }
+
+  if (user.role !== 'super_admin' && competition.admin_id !== user.id) {
+    throw new AppError('FORBIDDEN', 403);
+  }
+
+  const [globalStandings, poules, eliminationTree, finalResults] = await Promise.all([
+    pouleStandingsService.getGlobalStandings(id),
+    pouleRepository.getPoulesByCompetition(id),
+    eliminationService.getEliminationTree(id, user).catch(() => ({ competition_id: id, brackets: [] })),
+    getFinalResults(id)
+  ]);
+
+  const pouleStandings = await Promise.all(
+    poules.map(async (poule) => {
+      const standings = await pouleStandingsService.getPouleStandings(poule.id);
+      return {
+        pouleId: poule.id,
+        pouleNumber: poule.poule_number,
+        standings: standings.ranking
+      };
+    })
+  );
+
+  return {
+    competition,
+    globalStandings,
+    pouleStandings,
+    eliminationTree,
+    finalResults
+  };
+}
+
+async function getFinalResults(competitionId) {
+  const result = await db.query(
+    `
+    SELECT fr.fencer_id,
+           fr.final_position,
+           f.surname,
+           f.given_name
+    FROM final_results fr
+    LEFT JOIN fencers f ON f.id = fr.fencer_id
+    WHERE fr.competition_id = $1
+    ORDER BY fr.final_position ASC
+    `,
+    [competitionId]
+  );
+
+  return result.rows.map((row) => ({
+    fencer: {
+      id: row.fencer_id,
+      surname: row.surname,
+      given_name: row.given_name
+    },
+    final_position: row.final_position
+  }));
 }
 
 // =========================

@@ -2,12 +2,12 @@ require('dotenv').config();
 
 const app = require('./app');
 const { testConnection } = require('./config/db');
+const authService = require('./services/auth.service');
 
 const PORT = process.env.PORT || 3000;
 
 const http = require('http');
 const { Server } = require('socket.io');
-const app = require('./app');
 
 const server = http.createServer(app);
 
@@ -38,6 +38,9 @@ async function startServer() {
   try {
     // Test DB connection before starting server
     await testConnection();
+
+    // Ensure a deployment bootstrap user exists
+    await authService.ensureSuperAdmin();
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

@@ -13,6 +13,19 @@ async function findClubByName(name) {
   return result.rows[0];
 }
 
+async function findClubById(id) {
+  const result = await db.query(
+    `
+    SELECT * FROM clubs
+    WHERE id = $1
+    LIMIT 1
+    `,
+    [id]
+  );
+
+  return result.rows[0] || null;
+}
+
 async function createClub(name, city = 'Unknown', country = 'Unknown') {
   const result = await db.query(
     `
