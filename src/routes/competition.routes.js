@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const competitionController = require('../controllers/competition.controller');
-const authMiddleware = require('../middleware/auth.middleware');
-const { requireAnyRole } = require('../middleware/auth.middleware');
+const { authMiddleware, requireAnyRole } = require('../middleware/auth.middleware');
 const multipartMiddleware = require('../middleware/multipart.middleware');
 const registrationController =
   require('../controllers/competitionRegistration.controller');

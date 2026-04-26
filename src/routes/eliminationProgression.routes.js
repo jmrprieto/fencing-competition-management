@@ -4,12 +4,11 @@ const router = express.Router();
 const controller =
   require('../controllers/eliminationProgression.controller');
 
-const auth =
-  require('../middleware/auth.middleware');
+const { authMiddleware, requireAnyRole } = require('../middleware/auth.middleware');
 
 router.patch(
   '/bouts/:id',
-  auth,
+  authMiddleware,
   controller.updateBout
 );
 

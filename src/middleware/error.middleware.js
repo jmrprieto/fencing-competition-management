@@ -1,4 +1,4 @@
-const errors = require('../i18n/errors');
+const errors = require('../i18n/error');
 const getLanguage = require('../utils/getLanguage');
 
 function errorMiddleware(err, req, res, next) {

@@ -39,17 +39,17 @@ async function createCompetition(data, user) {
   // VALIDATION
   // -------------------------
 
-  if (!name || !city || !country || !category || !club_id && !clubId || !start_date) {
+  if (!name || !city || !country || !category || (!club_id && !clubId) || !start_date) {
     throw new AppError('MISSING_FIELDS', 400);
   }
 
-  const clubId = Number(club_id ?? clubId);
+  const normalizedClubId = Number(club_id ?? clubId);
 
-  if (!Number.isInteger(clubId) || clubId <= 0) {
+  if (!Number.isInteger(normalizedClubId) || normalizedClubId <= 0) {
     throw new AppError('INVALID_CLUB_ID', 400);
   }
 
-  const club = await clubRepository.findClubById(clubId);
+  const club = await clubRepository.findClubById(normalizedClubId);
 
   if (!club) {
     throw new AppError('CLUB_NOT_FOUND', 404);
@@ -79,7 +79,7 @@ async function createCompetition(data, user) {
     city: city.trim(),
     country: country.trim(),
     category: category.trim(),
-    club_id: clubId,
+    club_id: normalizedClubId,
     start_date: startDate,
     end_date: endDate,
 

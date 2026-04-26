@@ -4,8 +4,7 @@ const router = express.Router();
 const controller =
   require('../controllers/pouleStandings.controller');
 
-const authMiddleware =
-  require('../middleware/auth.middleware');
+const { authMiddleware, requireAnyRole } = require('../middleware/auth.middleware');
 
 router.get(
   '/:id/standings',
